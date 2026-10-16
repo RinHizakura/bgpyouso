@@ -229,7 +229,7 @@ function render(posts, b, photos = {}) {
     `<div><div class='muted'>🎸 本命樂團</div><div class='name'>${esc(topBand)}</div>` +
     `<div class='big'><b>${topN}</b> <span style='font-size:20px'>篇</span></div><div>占各團篇次 ${pct(topN, total)}</div>` +
     "<div class='legend' style='margin-top:14px;max-width:520px'>" +
-    ranking.map(([x, n]) => `<span><i style='background:${color[x]}'></i>${esc(x)} <span class='muted'>${n} 篇 · ${pct(n, total, 0)}</span></span>`).join("") +
+    ranking.map(([x, n]) => `<span><i style='background:${color[x]}'></i>${esc(x)} <span class='muted'><span class='cnt'>${n} 篇 · </span>${pct(n, total, 0)}</span></span>`).join("") +
     "</div></div></section>"];
 
   h.push("<h2>🎤 各團成分</h2><div class='grid bands'>");
@@ -330,7 +330,7 @@ function demo(bandsTxt) {
   assert((out.match(/class='card( zero)?'/g) || []).length === 12 && out.includes("<path d=") && out.includes("<polyline"), "9 張團卡 + 前 3 名角色卡、圓餅、折線");
   assert(out.includes("關鍵字：彩彩 <span class='muted'>67%</span>"), "稱呼習慣：彩彩 2 次 / 丸山彩 1 次");
   assert(out.includes("<nav>") && out.includes("id='s0'") && out.includes("角色總排行"), "導覽與排行");
-  assert(out.includes("<i style='background:#ffcc00'></i>ハロー、ハッピーワールド！ <span class='muted'>0 篇 · 0%"), "封面圖例列全部 9 團含 0 篇");
+  assert(out.includes("<i style='background:#ffcc00'></i>ハロー、ハッピーワールド！ <span class='muted'><span class='cnt'>0 篇 · </span>0%"), "封面圖例列全部 9 團含 0 篇");
   assert(out.includes('fill="#ff9ecb"') && out.includes('stroke="#ff9ecb"'), "Pastel*Palettes 的圓餅扇形和折線用代表色");
   assert(out.includes("<div class='ph'></div>") && !out.includes("<img"), "沒給 photos：角色卡空框、團卡沒 logo");
   const photos = loadPhotos("# 註解\n戸山香澄=https://p/kasumi.png\nPoppin'Party=https://p/popipa.svg\n");
