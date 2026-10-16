@@ -44,7 +44,6 @@ ul,ol{padding-left:1.2em}footer{margin-top:64px;text-align:center;color:var(--mu
   .top3{gap:8px}.card .body{padding:8px 10px}.card .n{font-size:14px}
   h2{margin:40px 0 6px;font-size:20px}
 }
-.steps li{margin-bottom:10px}.shot{display:block;max-width:300px;width:100%;border-radius:12px;margin:8px 0 4px;border:1px solid var(--line)}  /* img/stepN.jpg 沒有就自動拿掉 */
 /* 上傳區 */
 .drop{display:block;border:2px dashed #e0507a80;border-radius:24px;padding:40px 24px;text-align:center;background:var(--card);box-shadow:var(--shadow);cursor:pointer}
 .drop.over{background:#e0507a14}.drop input{display:none}
@@ -72,10 +71,10 @@ button.btn{border:0;cursor:pointer;font:inherit;font-weight:900}.btn.ghost{backg
 <div class="btn">選擇匯出檔</div><p class="muted">解開 zip 後的 threads_and_replies.json</p></label>
 <div id="msg"></div>
 <h2>怎麼拿到匯出檔</h2>
-<ol class="steps">
-<li>Threads App → 設定 → 帳號中心 → 你的資訊和權限 → <b>下載你的資訊</b><img class="shot" src="img/step1.jpg" alt="" loading="lazy" onerror="this.remove()"></li>
-<li>選 Threads、格式選 <b>JSON</b>（不要 HTML）、日期範圍選全部、媒體畫質選<b>低</b><img class="shot" src="img/step2.jpg" alt="" loading="lazy" onerror="this.remove()"></li>
-<li>等 Meta 寄信（幾分鐘到幾天都有），下載 zip 並解壓縮，把裡面的 <b>threads_and_replies.json</b> 丟到上面<img class="shot" src="img/step3.jpg" alt="" loading="lazy" onerror="this.remove()"></li>
+<ol>
+<li>Threads App → 設定 → 帳號中心 → 你的資訊和權限 → <b>下載你的資訊</b></li>
+<li>選 Threads、格式選 <b>JSON</b>（不要 HTML）、日期範圍選全部、媒體畫質選<b>低</b></li>
+<li>等 Meta 寄信（幾分鐘到幾天都有），下載 zip 並解壓縮，把裡面的 <b>threads_and_replies.json</b> 丟到上面</li>
 </ol>
 <details id="keys" open><summary>關鍵字</summary>
 <div id="editor">
