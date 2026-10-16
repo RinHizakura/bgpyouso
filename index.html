@@ -1,0 +1,130 @@
+<!doctype html><html lang='zh-Hant'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>我的 BanG Dream! 成分</title>
+<link rel="preconnect" href="https://fonts.gstatic.com"><link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+/* 樣式沿用 iamnotdd/crush/report.py，只留這份報告用到的 */
+:root{color-scheme:dark;--bg:#151217;--card:#201c24;--fg:#f2eef4;--muted:#a199a8;--line:#2f2934;--accent:#e0507a;--accent2:#9a6ee0;--grad:linear-gradient(135deg,#e0507a,#9a6ee0);--shadow:0 8px 28px #0007}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 "Zen Maru Gothic","Noto Sans TC","Noto Sans JP",system-ui,-apple-system,sans-serif}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(600px 400px at 8% 0%,#e0507a22,transparent 70%),radial-gradient(600px 400px at 100% 30%,#9a6ee022,transparent 70%)}
+main{max-width:1000px;margin:0 auto;padding:24px 16px 64px}
+h1{margin:16px 0 8px;font-size:clamp(30px,6vw,44px);font-weight:900;letter-spacing:.02em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{margin:60px 0 6px;font-size:24px;font-weight:900;display:flex;align-items:center;gap:10px}
+h2::before{content:"";width:6px;height:24px;border-radius:3px;background:var(--grad)}
+.muted{color:var(--muted)}a{color:inherit;text-decoration-color:#e0507a80}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 24px}.chips span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:13px;box-shadow:var(--shadow)}
+nav{position:sticky;top:0;z-index:5;display:flex;gap:4px;overflow-x:auto;padding:8px 0;margin:0 -16px 8px;padding-left:16px;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);scrollbar-width:none}
+nav a{white-space:nowrap;text-decoration:none;font-size:13px;padding:5px 12px;border-radius:999px;color:var(--muted)}nav a:hover{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+.cover{position:relative;overflow:hidden;display:flex;gap:32px;align-items:center;flex-wrap:wrap;background:var(--card);border-radius:24px;padding:32px;box-shadow:var(--shadow)}
+.cover .name{font-size:clamp(28px,5vw,40px);font-weight:900;line-height:1.2}
+.cover .big{font-size:clamp(56px,10vw,80px);font-weight:900;line-height:1;margin:6px 0;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px}
+.card{background:var(--card);border-radius:18px;overflow:hidden;position:relative;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-4px);box-shadow:0 16px 36px #e0507a30}
+.card .rank{position:absolute;top:10px;left:10px;background:#000a;color:#fff;border-radius:999px;padding:2px 11px;font-weight:900;backdrop-filter:blur(4px)}
+.rank.r1{background:linear-gradient(135deg,#ffd76a,#e0a020);color:#3a2a00}.rank.r2{background:linear-gradient(135deg,#f0f0f0,#b8b8c0);color:#333}.rank.r3{background:linear-gradient(135deg,#f0b68a,#b5652a);color:#fff}
+.card .body{padding:12px 14px 14px}.card .n{font-weight:900;font-size:16px}.card small{display:block;color:var(--muted)}
+.bar{height:8px;background:var(--line);border-radius:4px;margin:8px 0;overflow:hidden}.bar i{display:block;height:100%;border-radius:4px;background:var(--grad);animation:grow 1.1s cubic-bezier(.2,.8,.2,1)}
+@keyframes grow{from{width:0}}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+th,td{padding:10px 12px;text-align:left;border-top:1px solid var(--line)}th{border-top:0;color:var(--muted);font-weight:700;font-size:12px;letter-spacing:.06em}td.r,th.r{text-align:right}tr:hover td{background:#e0507a08}
+.chart{background:var(--card);border-radius:20px;padding:20px;box-shadow:var(--shadow)}svg{width:100%;height:auto}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;margin-bottom:8px}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tbl-wrap{overflow-x:auto;border-radius:16px}
+ul,ol{padding-left:1.2em}footer{margin-top:64px;text-align:center;color:var(--muted);font-size:13px}
+.bands{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}.bands .body{padding:16px 18px}.bands .n{font-size:20px}
+.bands .logo{height:96px;background:#f3eff5;display:flex;align-items:center;justify-content:center;padding:14px 48px 14px 14px}.bands .logo img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+.top3{grid-template-columns:repeat(3,1fr);max-width:720px}.top3 img,.top3 .ph{width:100%;aspect-ratio:3/4;object-fit:contain;display:block;background:var(--line)}
+/* 上傳區 */
+.drop{display:block;border:2px dashed #e0507a80;border-radius:24px;padding:40px 24px;text-align:center;background:var(--card);box-shadow:var(--shadow);cursor:pointer}
+.drop.over{background:#e0507a14}.drop input{display:none}
+.btn{display:inline-block;padding:12px 20px;border-radius:12px;background:var(--grad);color:#fff;font-weight:900}
+.err{background:#e0507a22;border-radius:12px;padding:12px 16px;margin-top:16px}
+/* 關鍵字編輯 */
+details{margin-top:48px}summary{cursor:pointer;font-size:24px;font-weight:900;list-style:none;display:flex;align-items:center;gap:10px}summary::before{content:"";width:6px;height:24px;border-radius:3px;background:var(--grad)}
+textarea{width:100%;min-height:360px;margin:8px 0;padding:12px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:12px;resize:vertical}
+button.btn{border:0;cursor:pointer;font:inherit;font-weight:900}.btn.ghost{background:var(--line);color:var(--fg)}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style></head><body><main id="app">
+<h1>我的 BanG Dream! 成分</h1>
+<p class='muted'>計算自己在 Threads 上的 BanG Dream 成分!(檔案只在瀏覽器分頁裡讀，不會被上傳至他處)</p>
+<label class="drop" id="drop"><input type="file" id="file" accept=".json,application/json">
+<div class="btn">選擇匯出檔</div><p class="muted">解開 zip 後的 threads_and_replies.json</p></label>
+<div id="msg"></div>
+<h2>怎麼拿到匯出檔</h2>
+<ol>
+<li>Threads App → 設定 → 帳號中心 → 你的資訊和權限 → <b>下載你的資訊</b></li>
+<li>選 Threads、格式選 <b>JSON</b>（不要 HTML）、日期範圍選全部</li>
+<li>等 Meta 寄信（幾分鐘到幾天都有），下載 zip 並解壓縮，把裡面的 <b>threads_and_replies.json</b> 丟到上面</li>
+</ol>
+<details id="keys" open><summary>關鍵字</summary>
+<p class="muted">可以依自己習慣的稱呼加同義詞，例如把「阿燈」加到高松燈那一行。</p>
+<p class="muted">一團一段「# ===== 樂團=別名 =====」，底下一行一個角色「正式名=別名=綽號」；「!=詞=詞」是排除詞（整個詞出現時不算裡面的別名）。改好的表只存在這個瀏覽器裡。</p>
+<textarea id="keytxt" spellcheck="false"></textarea>
+<div class="row"><button class="btn" id="savekeys">儲存並重算</button><button class="btn ghost" id="resetkeys">還原預設</button><span id="keymsg" class="muted"></span></div>
+</details>
+</main>
+<script src="youso.js"></script>
+<script>
+const $ = id => document.getElementById(id), app = $("app"), home = app.innerHTML;
+const KEY = "bands.txt";
+const fail = e => { const el = $("msg") || $("keymsg"); if (el) el.innerHTML = `<div class='err'>${esc(e.message || e)}</div>`; console.error(e); };
+
+const defaultBands = fetch("bands.txt").then(r => { if (!r.ok) throw new Error("Fail to load bands.txt"); return r.text(); });
+const store = { get: () => { try { return localStorage.getItem(KEY); } catch { return null; } }, set: v => { try { v == null ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, v); } catch {} } };
+const bandsTxt = async () => store.get() ?? await defaultBands;  // ponytail: 改過的表存 localStorage，沒改就用 bands.txt
+const photos = fetch("photos.txt").then(r => r.ok ? r.text() : "").catch(() => "").then(loadPhotos);  // 沒有就沒圖，不擋報告
+let lastPosts = null;
+
+function checkBands(txt) {
+  const b = loadBands(txt);
+  if (!b.order.length) throw new Error("沒有任何「# ===== 樂團 =====」段落");
+  return b;
+}
+
+async function readExport(file) {
+  if (!/\.json$/i.test(file.name)) throw new Error("只接受 .json 檔：請先解壓縮 zip，選裡面的 threads_and_replies.json");
+  return JSON.parse(await file.text());
+}
+
+async function show() {
+  app.innerHTML = render(lastPosts, checkBands(await bandsTxt()), await photos) + "<p style='text-align:center;margin-top:16px'><button class='btn ghost' id='editkeys'>關鍵字</button></p>";
+  const big = document.querySelector(".big b");  // 封面大數字跑上去
+  if (big) { const n = +big.textContent, t0 = performance.now(); (function f(t) { const k = Math.min(1, (t - t0) / 1200), e = 1 - Math.pow(1 - k, 3); big.textContent = Math.round(n * e); if (k < 1) requestAnimationFrame(f); })(t0); }
+  window.scrollTo(0, 0);
+}
+
+async function handle(file) {
+  $("msg").innerHTML = "<p class='muted'>計算中…</p>";
+  try { lastPosts = parseExport(await readExport(file)); await show(); } catch (e) { fail(e); }
+}
+
+const fillKeys = async () => { $("keytxt").value = await bandsTxt(); };
+function goHome(openKeys) {
+  app.innerHTML = home; fillKeys();
+  if (openKeys) { $("keys").open = true; $("keys").scrollIntoView(); }
+}
+
+// 事件掛在 app 上：首頁和報告會互相換掉 innerHTML
+app.addEventListener("change", e => { if (e.target.id === "file" && e.target.files[0]) handle(e.target.files[0]); });
+app.addEventListener("dragover", e => { const d = e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.add("over"); } });
+app.addEventListener("dragleave", e => e.target.closest("#drop")?.classList.remove("over"));
+app.addEventListener("drop", e => { const d = e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.remove("over"); e.dataTransfer.files[0] && handle(e.dataTransfer.files[0]); } });
+app.addEventListener("click", async e => {
+  const id = e.target.id;
+  if (id === "editkeys") goHome(true);
+  if (id === "resetkeys") { store.set(null); await fillKeys(); $("keymsg").textContent = "已還原預設"; }
+  if (id === "savekeys") {
+    try { const t = $("keytxt").value; checkBands(t); store.set(t); $("keymsg").textContent = "已儲存"; if (lastPosts) await show(); }
+    catch (err) { $("keymsg").textContent = err.message; }
+  }
+});
+fillKeys();
+
+if (location.search === "?demo") {  // 假資料看版面
+  lastPosts = parseExport({text_post_app_text_posts: [
+    {title: "ポピパ的香澄跟有咲太好了", creation_timestamp: 1777593600}, {title: "彩彩 彩彩 丸山彩", creation_timestamp: 1777680000},
+    {title: "MyGO 燈跟祥子 Ave Mujica 同框", creation_timestamp: 1780358400}, {title: "Roselia 友希那 紗夜 リサ", creation_timestamp: 1782000000},
+    {title: "今天天氣真好", creation_timestamp: 1782100000}]});
+  show().catch(fail);
+}
+</script></body></html>
