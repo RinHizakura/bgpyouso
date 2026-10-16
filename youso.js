@@ -10,7 +10,7 @@
 const BAND_COLOR = {"Poppin'Party": "#ff5522", "Afterglow": "#e53c4a", "Pastel*Palettes": "#ff9ecb", "Roselia": "#3b5dc9",
   "ハロー、ハッピーワールド！": "#ffcc00", "Morfonica": "#4ea6e1", "RAISE A SUILEN": "#b40080", "MyGO!!!!!": "#3f92e0", "Ave Mujica": "#5e3aa3"};
 const COLORS = ["#e0507a", "#4c8fdc", "#f0a43a", "#3fb28f", "#9a6ee0", "#e8733a", "#38b6c9", "#c9a23a", "#7a7a7a", "#d05fbf"];
-const TITLE = "我的 BanG Dream! 成分";
+const TITLE = "我的 BanG Dream! 成分", SITE = "https://rinhizakura.github.io/bgpyouso/";
 // GitHub 經典貓標（octicon mark-github），首頁和報告頁尾共用
 const GITHUB = `<a class="gh" href="https://github.com/RinHizakura/bgpyouso"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>RinHizakura/bgpyouso</a>`;
 
@@ -70,34 +70,36 @@ function compile(names) {
 // 網址只留第一段路徑（threads.com/@帳號 也算提到），其餘拿掉——亂碼會誤中 Ag 之類的短別名
 const textOf = p => (p.text || "").replace(/https?:\/\/[^/\s]+\/?([^/?#\s]*)\S*/g, "$1");
 
-function* mentions(posts, c) {
-  for (const p of posts) {
-    const found = {};
-    for (const m of textOf(p).match(c.pat) || []) {
-      const k = c.lookup[m.toLowerCase()];
-      if (k !== "!") found[k] = (found[k] || 0) + 1;
-    }
-    yield [p, found];
-  }
-}
+// ponytail: 單字或 1～2 個假名的別名最容易誤判（巴、彩、ひな），只靠這種對到的貼文列進「待確認」
+const isWeak = a => a.length === 1 || /^[\u3040-\u30ff]{1,2}$/.test(a);
 
 function analyze(posts, b, c) {
-  // 回傳 {bands: {樂團: 篇}, chars: {角色: 篇}, hit: 有提到的篇數, months: {樂團: {YYYY-MM: 篇}}}
-  const bands = {}, chars = {}, months = {};
-  let hit = 0;
-  for (const [p, found] of mentions(posts, c)) {
-    const names = Object.keys(found);
-    if (!names.length) continue;
-    hit++;
-    const hb = new Set(names.map(n => b.bandOf[n]));
-    for (const x of hb) {
-      bands[x] = (bands[x] || 0) + 1;
-      const ym = (p.timestamp || "").slice(0, 7);
-      (months[x] = months[x] || {})[ym] = (months[x][ym] || 0) + 1;
+  // 回傳 {bands: {樂團: 篇}, chars: {角色: 篇}, hit: 有提到的篇數, months: {樂團: {YYYY-MM: 篇}},
+  //       by: {正式名: [貼文索引]}, first: {正式名: 最早 timestamp}, pairs: [[角色, 角色, 篇]] 多→少, cross: 跨團同框篇數,
+  //       weak: [{i, aliases, names}] 只靠弱別名對到的貼文}
+  const bands = {}, chars = {}, months = {}, by = {}, first = {}, pairN = {}, weak = [];
+  let hit = 0, cross = 0;
+  posts.forEach((p, i) => {
+    const found = {}, used = new Set();
+    for (const m of textOf(p).match(c.pat) || []) {
+      const k = c.lookup[m.toLowerCase()];
+      if (k === "!") continue;
+      found[k] = (found[k] || 0) + 1; used.add(c.spell[m.toLowerCase()]);
     }
-    for (const n of names) if (b.bandOf[n] !== n) chars[n] = (chars[n] || 0) + 1;
-  }
-  return {bands, chars, hit, months};
+    const names = Object.keys(found);
+    if (!names.length) return;
+    hit++;
+    const hb = new Set(names.map(n => b.bandOf[n])), ym = (p.timestamp || "").slice(0, 7);
+    if (hb.size > 1) cross++;
+    for (const x of hb) { bands[x] = (bands[x] || 0) + 1; (months[x] = months[x] || {})[ym] = (months[x][ym] || 0) + 1; }
+    const cs = names.filter(n => b.bandOf[n] !== n).sort();
+    for (const n of cs) chars[n] = (chars[n] || 0) + 1;
+    for (const x of [...hb, ...cs]) { (by[x] = by[x] || []).push(i); if (p.timestamp && (!first[x] || p.timestamp < first[x])) first[x] = p.timestamp; }
+    for (let a = 0; a < cs.length; a++) for (let q = a + 1; q < cs.length; q++) pairN[cs[a] + "\0" + cs[q]] = (pairN[cs[a] + "\0" + cs[q]] || 0) + 1;
+    if ([...used].every(isWeak)) weak.push({i, aliases: [...used], names});
+  });
+  const pairs = Object.entries(pairN).map(([k, n]) => [...k.split("\0"), n]).sort((p, q) => q[2] - p[2]);
+  return {bands, chars, hit, months, by, first, pairs, cross, weak};
 }
 
 function aliasUsage(posts, c) {
@@ -195,9 +197,16 @@ function addNav(out) {
 }
 
 // ---------- 報告 ----------
+function excerpt(p, c, n = 100) {
+  // 貼文摘錄，對到的關鍵字包 <mark>（排除詞不標）
+  const t = (p.text || "").replace(/\s+/g, " ").trim(), cut = t.length > n ? t.slice(0, n) + "…" : t;
+  return esc(cut.replace(c.pat, m => c.lookup[m.toLowerCase()] === "!" ? m : `\u0001${m}\u0002`)).replace(/\u0001/g, "<mark>").replace(/\u0002/g, "</mark>");
+}
+const day = p => (p.timestamp || "").slice(0, 10);
+
 function render(posts, b, photos = {}) {
   const c = compile(b.names);
-  const {bands, chars, hit, months} = analyze(posts, b, c);
+  const {bands, chars, hit, months, by, first, pairs, cross, weak} = analyze(posts, b, c);
   if (!hit) throw new Error(`共 ${posts.length} 篇，一篇都沒提到 BanG Dream!——去 bands.txt 補上你常用的叫法`);
   const total = Object.values(bands).reduce((s, n) => s + n, 0);
   const ranking = b.order.map(x => [x, bands[x] || 0]).sort((p, q) => q[1] - p[1]);  // 9 團都列，0 篇也算成分；平手照 bands.txt 順序
@@ -207,13 +216,17 @@ function render(posts, b, photos = {}) {
   const monthsAll = [...new Set(posts.map(p => (p.timestamp || "").slice(0, 7)).filter(Boolean))].sort();
   const usage = aliasUsage(posts, c);
   const members = band => Object.keys(b.bandOf).filter(n => b.bandOf[n] === band && n !== band);
+  const newest = idx => [...idx].sort((p, q) => day(posts[q]).localeCompare(day(posts[p])));
+  const postList = (idx, limit = 10) => { const s = newest(idx); return "<ul class='posts'>" + s.slice(0, limit).map(i => `<li><time>${day(posts[i])}</time>${excerpt(posts[i], c)}</li>`).join("") + "</ul>" + (s.length > limit ? `<p class='muted'>…還有 ${s.length - limit} 篇</p>` : ""); };
+  const dot = x => `<i class='dot' style='background:${color[x]}'></i>`;
+  const copyText = `${TITLE}\n🎸 本命 ${topBand} ${pct(topN, total, 0)}\n` + ranking.filter(([, n]) => n).slice(0, 5).map(([x, n]) => `${x} ${pct(n, total, 0)}`).join("｜") + `\n共 ${posts.length} 篇，${pct(hit, posts.length, 0)} 提到 BanG Dream!\n${SITE}`;
 
   const h = [`<h1>${esc(TITLE)}</h1>`,
     `<div class='chips'><span>📝 ${posts.length} 篇</span><span>📅 ${monthsAll[0] || "?"} ～ ${monthsAll[monthsAll.length - 1] || "?"}</span>` +
     `<span>🎯 ${pct(hit, posts.length)} 提到 BanG Dream!</span><span>💬 合計 ${total} 篇次</span></div>`,
     "<section class='cover'>" + pieChart(ranking, palette).replace("<svg", "<svg style='width:240px;flex:none'") +
     `<div><div class='muted'>🎸 本命樂團</div><div class='name'>${esc(topBand)}</div>` +
-    `<div class='big'><b>${topN}</b> <span style='font-size:20px'>篇</span></div><div>占各團篇次 ${pct(topN, total)}</div>` +
+    `<div class='big'><b>${topN}</b> <span style='font-size:20px'>篇</span></div><div>占各團篇次 ${pct(topN, total)} <button class='btn ghost sm' id='copy' data-text='${esc(copyText)}'>📋 複製成分文字</button></div>` +
     "<div class='legend' style='margin-top:14px;max-width:520px'>" +
     ranking.map(([x, n]) => `<span><i style='background:${color[x]}'></i>${esc(x)} <span class='muted'>${n} 篇 · ${pct(n, total, 0)}</span></span>`).join("") +
     "</div></div></section>"];
@@ -224,7 +237,7 @@ function render(posts, b, photos = {}) {
     const u = {};
     for (const x of [band, ...members(band)]) for (const [a, k] of Object.entries(usage[x] || {})) u[a] = (u[a] || 0) + k;
     const ul = Object.entries(u).sort((p, q) => q[1] - p[1]), utot = ul.reduce((s, [, k]) => s + k, 0) || 1;
-    h.push(`<div class='card' style='border-top:6px solid ${color[band]}'><span class='rank r${i + 1}'>#${i + 1}</span><div class='logo'>${img(photos, band)}</div><div class='body'><div class='n'>${esc(band)}</div>` +
+    h.push(`<div class='card${n ? "" : " zero"}' style='border-top:6px solid ${color[band]}'><span class='rank r${i + 1}'>#${i + 1}</span><div class='logo'>${img(photos, band)}</div><div class='body'><div class='n'>${esc(band)}</div>` +
       `<div class='bar'><i style='width:${pct(n, topN, 0)}'></i></div><div>${n} 篇 <span class='muted'>${pct(n, total)}</span></div>` +
       (top3.length ? "<small>角色：" + top3.map(([k, x]) => `${esc(x)} ${k}`).join("、") + "</small>" : "") +
       (ul.length ? "<small>關鍵字：" + ul.slice(0, 5).map(([a, k]) => `${esc(a)} <span class='muted'>${pct(k, utot, 0)}</span>`).join("、") + "</small>" : "") +
@@ -245,12 +258,35 @@ function render(posts, b, photos = {}) {
       `<div class='card' style='border-top:6px solid ${color[b.bandOf[x]]}'><span class='rank r${i + 1}'>#${i + 1}</span>${img(photos, x) || "<div class='ph'></div>"}<div class='body'><div class='n'>${esc(x)}</div>` +
       `<small>${esc(b.bandOf[x])}</small><div class='bar'><i style='width:${pct(n, top10[0][1], 0)}'></i></div><div>${n} 篇</div></div></div>`));
     h.push("</div>");
-    if (top10.length > 3) {
-      h.push("<div class='tbl-wrap' style='margin-top:16px'><table><tr><th>#</th><th>角色</th><th>樂團</th><th class='r'>篇數</th></tr>");
-      top10.slice(3).forEach(([x, n], i) => h.push(`<tr><td>${i + 4}</td><td><b>${esc(x)}</b></td><td class='muted'>${esc(b.bandOf[x])}</td><td class='r'>${n}</td></tr>`));
-      h.push("</table></div>");
+    const all = Object.entries(chars).sort((p, q) => q[1] - p[1]);
+    if (all.length > 3) {
+      h.push(`<div class='tbl-wrap collapsed' id='chars' style='margin-top:16px'><table><tr><th>#</th><th>角色</th><th>樂團</th><th>首次提到</th><th class='r'>篇數</th></tr>`);
+      all.slice(3).forEach(([x, n], i) => h.push(`<tr${i + 3 >= 10 ? " class='more'" : ""}><td>${i + 4}</td><td><b>${esc(x)}</b></td><td class='muted'>${dot(b.bandOf[x])}${esc(b.bandOf[x])}</td><td class='muted'>${(first[x] || "").slice(0, 10)}</td><td class='r'>${n}</td></tr>`));
+      h.push("</table>" + (all.length > 10 ? `<p style='text-align:center;margin:12px 0 0'><button class='btn ghost sm' id='showall' data-n='${all.length}'>顯示全部 ${all.length} 位</button></p>` : "") + "</div>");
     }
   }
+
+  if (pairs.length || cross) {
+    h.push(`<h2>👯 同框</h2><p class='muted'>同一篇提到兩位以上角色。跨團同框 ${cross} 篇，占提到邦邦的 ${pct(cross, hit, 0)}。</p>`);
+    if (pairs.length) h.push("<div class='chips'>" + pairs.slice(0, 10).map(([a, q, n]) => `<span>${dot(b.bandOf[a])}${esc(a)} × ${dot(b.bandOf[q])}${esc(q)} <span class='muted'>${n} 篇</span></span>`).join("") + "</div>");
+  }
+
+  const tl = ranking.filter(([x, n]) => n && first[x]).sort((p, q) => first[p[0]].localeCompare(first[q[0]]));
+  if (tl.length) {
+    h.push("<h2>🗓️ 入坑時間線</h2><ol class='tl'>" +
+      tl.map(([x]) => { const i = by[x].reduce((a, j) => (posts[j].timestamp < posts[a].timestamp ? j : a)); return `<li><time>${first[x].slice(0, 10)}</time><div><b style='color:${color[x]}'>${esc(x)}</b><div class='muted'>${excerpt(posts[i], c, 80)}</div></div></li>`; }).join("") + "</ol>");
+  }
+
+  h.push("<h2>📚 命中貼文</h2><p class='muted'>每團、每位角色最近 10 篇，<mark>標記</mark>是對到的關鍵字。數字不對勁就從這裡找原因。</p>");
+  for (const [band, n] of ranking) if (n) h.push(`<details class='hits'><summary>${dot(band)}${esc(band)} <span class='muted'>${n} 篇</span></summary>` + postList(by[band]) +
+    members(band).filter(x => chars[x]).sort((p, q) => chars[q] - chars[p]).map(x => `<details><summary>${esc(x)} <span class='muted'>${chars[x]} 篇</span></summary>${postList(by[x])}</details>`).join("") + "</details>");
+
+  if (weak.length) {
+    h.push(`<h2>🔍 待確認</h2><p class='muted'>這 ${weak.length} 篇只靠單字或短假名對到（巴、彩、蘭、燈、ひな…），最容易誤判。不是在講邦邦的話，把那個詞加進該角色的排除詞。</p><ul class='posts weak'>` +
+      newest(weak.map(w => w.i)).slice(0, 50).map(i => { const w = weak.find(w => w.i === i); return `<li><time>${day(posts[i])}</time>${excerpt(posts[i], c)}<div class='row' style='margin-top:6px'>${w.names.map(n => `<button class='btn ghost sm' data-who='${esc(n)}'>改「${esc(n)}」的關鍵字</button>`).join("")}</div></li>`; }).join("") +
+      "</ul>" + (weak.length > 50 ? `<p class='muted'>…還有 ${weak.length - 50} 篇</p>` : ""));
+  }
+
   h.push(`<footer>產生於 ${new Date().toISOString().slice(0, 10)} · ${GITHUB}</footer>`);
   return addNav(h.join("\n"));
 }
@@ -270,21 +306,27 @@ function demo(bandsTxt) {
     {title: "MyGO 燈跟祥子 Ave Mujica 同框 https://www.threads.com/@x/post/1", creation_timestamp: 1780358400},  // 2026-06-02
     {media: [{uri: "media/b.jpg", creation_timestamp: 1780444800, title: "電燈壞了 今天天氣真好"}]},         // 排除詞：電燈 不算 燈
     {title: "backstage again, instagram page", creation_timestamp: 1780531200},                                // 英文要整個字：stage/again 不算 Ag
+    {title: "巴好帥", creation_timestamp: 1780617600},                                                              // 2026-06-05 只靠單字「巴」→ 待確認
   ]};
   const posts = parseExport(exp);
-  assert(posts.length === 5 && posts[0].text === "ポピパ的香澄跟有咲太好了" && posts[0].timestamp.startsWith("2026-05-01"), JSON.stringify(posts[0]));
-  assert(parseExport({foo: {bar: exp.text_post_app_text_posts}}).length === 5, "鍵名不同也找得到");
+  assert(posts.length === 6 && posts[0].text === "ポピパ的香澄跟有咲太好了" && posts[0].timestamp.startsWith("2026-05-01"), JSON.stringify(posts[0]));
+  assert(parseExport({foo: {bar: exp.text_post_app_text_posts}}).length === 6, "鍵名不同也找得到");
   let threw = false; try { parseExport({a: 1}); } catch { threw = true; } assert(threw, "不像匯出檔要報錯");
 
   const r = analyze(posts, b, compile(b.names));
-  assert(r.hit === 3, "hit=" + r.hit);
-  assert(JSON.stringify(r.bands) === JSON.stringify({"Poppin'Party": 1, "Pastel*Palettes": 1, "MyGO!!!!!": 1, "Ave Mujica": 1}), JSON.stringify(r.bands));  // 一篇兩團各算 1
+  assert(r.hit === 4, "hit=" + r.hit);
+  assert(JSON.stringify(r.bands) === JSON.stringify({"Poppin'Party": 1, "Pastel*Palettes": 1, "MyGO!!!!!": 1, "Ave Mujica": 1, "Afterglow": 1}), JSON.stringify(r.bands));  // 一篇兩團各算 1
+  assert(r.cross === 1 && JSON.stringify(r.pairs) === JSON.stringify([["市ヶ谷有咲", "戸山香澄", 1], ["豊川祥子", "高松燈", 1]]), JSON.stringify(r.pairs));  // 同框：同篇兩角色
+  assert(r.weak.length === 1 && r.weak[0].aliases.join() === "巴" && r.weak[0].names.join() === "宇田川巴", JSON.stringify(r.weak));  // 只靠單字對到
+  assert(r.first["Afterglow"].startsWith("2026-06-05") && r.first["MyGO!!!!!"].startsWith("2026-06-02") && r.by["Ave Mujica"].length === 1, JSON.stringify(r.first));
   assert(r.chars["丸山彩"] === 1 && r.chars["戸山香澄"] === 1 && r.chars["高松燈"] === 1 && r.chars["豊川祥子"] === 1, JSON.stringify(r.chars));  // 同篇多別名只算 1 篇
   assert(JSON.stringify(r.months["MyGO!!!!!"]) === JSON.stringify({"2026-06": 1}), JSON.stringify(r.months));
 
   const out = render(posts, b);
-  assert(out.includes("<div class='name'>Poppin&#x27;Party</div>"), "四團平手，照 bands.txt 順序 Poppin'Party 先");
-  assert((out.match(/class='card'/g) || []).length === 12 && out.includes("<path d=") && out.includes("<polyline"), "9 張團卡 + 前 3 名角色卡、圓餅、折線");
+  assert(out.includes("<div class='name'>Poppin&#x27;Party</div>"), "五團平手，照 bands.txt 順序 Poppin'Party 先");
+  assert(out.includes("👯 同框") && out.includes("🗓️ 入坑時間線") && out.includes("📚 命中貼文") && out.includes("🔍 待確認") && out.includes("data-who='宇田川巴'"), "新區塊都在");
+  assert(out.includes("<mark>香澄</mark>") && out.includes("id='copy'") && out.includes("class='card zero'") && out.includes("<th>首次提到</th>"), "摘錄標記、複製、0 篇卡片變淡、首次提到欄");
+  assert((out.match(/class='card( zero)?'/g) || []).length === 12 && out.includes("<path d=") && out.includes("<polyline"), "9 張團卡 + 前 3 名角色卡、圓餅、折線");
   assert(out.includes("關鍵字：彩彩 <span class='muted'>67%</span>"), "稱呼習慣：彩彩 2 次 / 丸山彩 1 次");
   assert(out.includes("<nav>") && out.includes("id='s0'") && out.includes("角色總排行"), "導覽與排行");
   assert(out.includes("<i style='background:#ffcc00'></i>ハロー、ハッピーワールド！ <span class='muted'>0 篇 · 0%"), "封面圖例列全部 9 團含 0 篇");

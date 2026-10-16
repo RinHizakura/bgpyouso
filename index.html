@@ -42,11 +42,19 @@ ul,ol{padding-left:1.2em}footer{margin-top:64px;text-align:center;color:var(--mu
 .btn{display:inline-block;padding:12px 20px;border-radius:12px;background:var(--grad);color:#fff;font-weight:900}
 .err{background:#e0507a22;border-radius:12px;padding:12px 16px;margin-top:16px}
 /* 關鍵字編輯 */
-details{margin-top:48px}summary{cursor:pointer;font-size:24px;font-weight:900;list-style:none;display:flex;align-items:center;gap:10px}summary::before{content:"";width:6px;height:24px;border-radius:3px;background:var(--grad)}
+#keys{margin-top:48px}summary{cursor:pointer;list-style:none}#keys>summary{font-size:24px;font-weight:900;display:flex;align-items:center;gap:10px}#keys>summary::before{content:"";width:6px;height:24px;border-radius:3px;background:var(--grad)}
 textarea{width:100%;min-height:360px;margin:8px 0;padding:12px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:12px;resize:vertical}
 select,input[type=text]{width:100%;font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .field{display:grid;grid-template-columns:4.5em 1fr;gap:8px 12px;align-items:center;margin:8px 0}.field label{font-weight:700;font-size:14px}
-details details{margin-top:12px}details details summary{font-size:14px;font-weight:700;color:var(--muted)}details details summary::before{display:none}
+#editor details{margin-top:12px}#editor details summary{font-size:14px;font-weight:700;color:var(--muted)}
+/* 報告新區塊 */
+.btn.sm{padding:6px 12px;font-size:13px;border-radius:9px;vertical-align:middle}mark{background:#e0507a55;color:inherit;border-radius:3px;padding:0 2px}
+.chips i,.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}.collapsed .more{display:none}.card.zero{opacity:.45}
+.posts{list-style:none;padding:0;margin:8px 0}.posts li{padding:8px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.6}.posts time{color:var(--muted);font-size:12px;margin-right:8px;white-space:nowrap}
+.hits{margin-top:8px;background:var(--card);border-radius:14px;padding:10px 16px;box-shadow:var(--shadow)}.hits summary{font-size:16px;font-weight:900}.hits details{margin:4px 0 0 12px}.hits details summary{font-size:14px;font-weight:700}
+.tl{list-style:none;padding:0;margin:8px 0 0 6px;border-left:2px solid var(--line)}.tl li{position:relative;padding:0 0 18px 20px;display:flex;gap:12px;align-items:flex-start}.tl li::before{content:"";position:absolute;left:-7px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--grad)}.tl time{color:var(--muted);font-size:13px;white-space:nowrap;min-width:6em}
+/* 報告頁的關鍵字抽屜 */
+#drawer{position:fixed;top:0;right:0;height:100%;width:min(560px,100%);background:var(--bg);border-left:1px solid var(--line);padding:16px;overflow:auto;transform:translateX(100%);transition:transform .25s;z-index:20;box-shadow:-8px 0 28px #0007}#drawer.open{transform:none}#drawer textarea{min-height:200px}
 button.btn{border:0;cursor:pointer;font:inherit;font-weight:900}.btn.ghost{background:var(--line);color:var(--fg)}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 </style></head><body><main id="app">
 <h1>我的 BanG Dream! 成分</h1>
@@ -61,6 +69,7 @@ button.btn{border:0;cursor:pointer;font:inherit;font-weight:900}.btn.ghost{backg
 <li>等 Meta 寄信（幾分鐘到幾天都有），下載 zip 並解壓縮，把裡面的 <b>threads_and_replies.json</b> 丟到上面</li>
 </ol>
 <details id="keys" open><summary>關鍵字</summary>
+<div id="editor">
 <p class="muted">選一個角色或樂團，加上自己習慣的稱呼。排除詞是「整個詞出現時不算」的例外，例如 電燈 不算 燈。改好的表只存在這個瀏覽器裡。</p>
 <div class="field"><label for="who">對象</label><select id="who"></select>
 <label for="syn">同義詞</label><input type="text" id="syn" placeholder="用 、 或 = 分隔">
@@ -68,13 +77,16 @@ button.btn{border:0;cursor:pointer;font:inherit;font-weight:900}.btn.ghost{backg
 <details><summary>進階：直接編輯整張表（一團一段「# ===== 樂團=別名 =====」，底下一行一個角色「正式名=別名=綽號」，「!=詞=詞」是排除詞）</summary>
 <textarea id="keytxt" spellcheck="false"></textarea></details>
 <div class="row"><button class="btn" id="savekeys">儲存並重算</button><button class="btn ghost" id="resetkeys">還原預設</button><span id="keymsg" class="muted"></span></div>
+</div>
 </details>
 <footer></footer>
 </main>
+<aside id="drawer"><div class="row" style="justify-content:space-between;margin-bottom:8px"><b style="font-size:20px">關鍵字</b><button class="btn ghost sm" id="closedrawer">關閉</button></div></aside>
 <script src="youso.js"></script>
 <script>
 document.querySelector("main footer").innerHTML = GITHUB;
-const $ = id => document.getElementById(id), app = $("app"), home = app.innerHTML;
+const $ = id => document.getElementById(id), app = $("app"), editor = $("editor"), drawer = $("drawer");
+editor.remove(); const home = app.innerHTML; $("keys").append(editor);  // 快照不含編輯器，之後靠搬節點避免重複 id
 const KEY = "bands.txt";
 const fail = e => { const el = $("msg") || $("keymsg"); if (el) el.innerHTML = `<div class='err'>${esc(e.message || e)}</div>`; console.error(e); };
 
@@ -96,7 +108,9 @@ async function readExport(file) {
 }
 
 async function show() {
-  app.innerHTML = render(lastPosts, checkBands(await bandsTxt()), await photos) + "<p style='text-align:center;margin-top:16px'><button class='btn ghost' id='editkeys'>關鍵字</button></p>";
+  app.innerHTML = render(lastPosts, checkBands(await bandsTxt()), await photos) +
+    "<p class='row' style='justify-content:center;margin-top:16px'><button class='btn ghost' id='editkeys'>關鍵字</button><button class='btn ghost' id='rehome'>換一個檔案</button></p>";
+  drawer.append(editor);
   const big = document.querySelector(".big b");  // 封面大數字跑上去
   if (big) { const n = +big.textContent, t0 = performance.now(); (function f(t) { const k = Math.min(1, (t - t0) / 1200), e = 1 - Math.pow(1 - k, 3); big.textContent = Math.round(n * e); if (k < 1) requestAnimationFrame(f); })(t0); }
   window.scrollTo(0, 0);
@@ -153,20 +167,25 @@ function writeBack() {
 }
 const fillKeys = async () => { $("keytxt").value = await bandsTxt(); fillWho(); };
 function goHome(openKeys) {
-  app.innerHTML = home; fillKeys();
+  app.innerHTML = home; $("keys").append(editor); drawer.classList.remove("open");
   if (openKeys) { $("keys").open = true; $("keys").scrollIntoView(); }
 }
 
-// 事件掛在 app 上：首頁和報告會互相換掉 innerHTML
-app.addEventListener("change", e => { if (e.target.id === "file" && e.target.files[0]) handle(e.target.files[0]); });
-app.addEventListener("dragover", e => { const d = e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.add("over"); } });
-app.addEventListener("dragleave", e => e.target.closest("#drop")?.classList.remove("over"));
-app.addEventListener("drop", e => { const d = e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.remove("over"); e.dataTransfer.files[0] && handle(e.dataTransfer.files[0]); } });
-app.addEventListener("change", e => { if (e.target.id === "who") fillFields(); });
-app.addEventListener("input", e => { if (e.target.id === "syn" || e.target.id === "exc") writeBack(); else if (e.target.id === "keytxt") fillWho(); });
-app.addEventListener("click", async e => {
-  const id = e.target.id;
-  if (id === "editkeys") goHome(true);
+// 事件掛在 document 上：首頁和報告會互相換掉 innerHTML，編輯器又會搬到 #app 外的抽屜
+document.addEventListener("change", e => { if (e.target.id === "file" && e.target.files[0]) handle(e.target.files[0]); });
+document.addEventListener("dragover", e => { const d = e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.add("over"); } });
+document.addEventListener("dragleave", e => e.target.closest("#drop")?.classList.remove("over"));
+document.addEventListener("drop", e => { const d = e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.remove("over"); e.dataTransfer.files[0] && handle(e.dataTransfer.files[0]); } });
+document.addEventListener("change", e => { if (e.target.id === "who") fillFields(); });
+document.addEventListener("input", e => { if (e.target.id === "syn" || e.target.id === "exc") writeBack(); else if (e.target.id === "keytxt") fillWho(); });
+document.addEventListener("click", async e => {
+  const id = e.target.id, who = e.target.dataset.who;
+  if (id === "editkeys") drawer.classList.add("open");
+  if (id === "closedrawer") drawer.classList.remove("open");
+  if (id === "rehome") goHome();
+  if (who) { const o = [...$("who").options].find(o => o.textContent.replace("（團名）", "") === who); if (o) { $("who").value = o.value; fillFields(); } drawer.classList.add("open"); }
+  if (id === "copy") navigator.clipboard.writeText(e.target.dataset.text).then(() => { e.target.textContent = "已複製 ✓"; }, () => { e.target.textContent = "複製失敗"; });
+  if (id === "showall") { const w = $("chars"); w.classList.toggle("collapsed"); e.target.textContent = w.classList.contains("collapsed") ? `顯示全部 ${e.target.dataset.n} 位` : "收合"; }
   if (id === "resetkeys") { store.set(null); await fillKeys(); $("keymsg").textContent = "已還原預設"; }
   if (id === "savekeys") {
     try { const t = $("keytxt").value; checkBands(t); store.set(t); $("keymsg").textContent = "已儲存"; if (lastPosts) await show(); }
@@ -179,7 +198,7 @@ if (location.search === "?demo") {  // 假資料看版面
   lastPosts = parseExport({text_post_app_text_posts: [
     {title: "ポピパ的香澄跟有咲太好了", creation_timestamp: 1777593600}, {title: "彩彩 彩彩 丸山彩", creation_timestamp: 1777680000},
     {title: "MyGO 燈跟祥子 Ave Mujica 同框", creation_timestamp: 1780358400}, {title: "Roselia 友希那 紗夜 リサ", creation_timestamp: 1782000000},
-    {title: "今天天氣真好", creation_timestamp: 1782100000}]});
+    {title: "巴好帥", creation_timestamp: 1782050000}, {title: "今天天氣真好", creation_timestamp: 1782100000}]});
   show().catch(fail);
 }
 </script></body></html>
