@@ -28,7 +28,7 @@ nav a{white-space:nowrap;text-decoration:none;font-size:13px;padding:5px 12px;bo
 @keyframes grow{from{width:0}}
 table{width:100%;border-collapse:collapse;background:var(--card);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
 th,td{padding:10px 12px;text-align:left;border-top:1px solid var(--line)}th{border-top:0;color:var(--muted);font-weight:700;font-size:12px;letter-spacing:.06em}td.r,th.r{text-align:right}tr:hover td{background:#e0507a08}
-.chart{background:var(--card);border-radius:20px;padding:20px;box-shadow:var(--shadow)}svg{width:100%;height:auto}
+.chart{background:var(--card);border-radius:20px;padding:20px;box-shadow:var(--shadow)}svg{width:100%;height:auto}.pie{width:240px;flex:none}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;margin-bottom:8px}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .tbl-wrap{overflow-x:auto;border-radius:16px}
 ul,ol{padding-left:1.2em}footer{margin-top:64px;text-align:center;color:var(--muted);font-size:13px}
@@ -36,6 +36,14 @@ ul,ol{padding-left:1.2em}footer{margin-top:64px;text-align:center;color:var(--mu
 .bands{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}.bands .body{padding:16px 18px}.bands .n{font-size:20px}
 .bands .logo{height:96px;background:#f3eff5;display:flex;align-items:center;justify-content:center;padding:14px 48px 14px 14px}.bands .logo img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
 .top3{grid-template-columns:repeat(3,1fr);max-width:720px}.top3 img,.top3 .ph{width:100%;aspect-ratio:3/4;object-fit:contain;display:block;background:var(--line)}
+/* 手機：團卡兩欄、logo 縮小，各團成分一屏截得下 */
+@media(max-width:600px){
+  .cover{gap:16px;padding:20px}.pie{width:160px}.cover .name{font-size:24px}.cover .big{font-size:48px}
+  .bands{grid-template-columns:repeat(2,1fr);gap:10px}.bands .logo{height:56px;padding:8px 8px 8px 44px}.bands .body{padding:8px 10px 10px}.bands .n{font-size:15px}
+  .card .rank{top:6px;left:6px;padding:1px 8px;font-size:12px}.card small{font-size:11px;line-height:1.5}.bar{margin:6px 0}
+  .top3{gap:8px}.card .body{padding:8px 10px}.card .n{font-size:14px}
+  h2{margin:40px 0 6px;font-size:20px}
+}
 /* 上傳區 */
 .drop{display:block;border:2px dashed #e0507a80;border-radius:24px;padding:40px 24px;text-align:center;background:var(--card);box-shadow:var(--shadow);cursor:pointer}
 .drop.over{background:#e0507a14}.drop input{display:none}

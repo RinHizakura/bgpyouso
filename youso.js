@@ -224,7 +224,7 @@ function render(posts, b, photos = {}) {
   const h = [`<h1>${esc(TITLE)}</h1>`,
     `<div class='chips'><span>📝 ${posts.length} 篇</span><span>📅 ${monthsAll[0] || "?"} ～ ${monthsAll[monthsAll.length - 1] || "?"}</span>` +
     `<span>🎯 ${pct(hit, posts.length)} 提到 BanG Dream!</span><span>💬 合計 ${total} 篇次</span></div>`,
-    "<section class='cover'>" + pieChart(ranking, palette).replace("<svg", "<svg style='width:240px;flex:none'") +
+    "<section class='cover'>" + pieChart(ranking, palette).replace("<svg", "<svg class='pie'") +
     `<div><div class='muted'>🎸 本命樂團</div><div class='name'>${esc(topBand)}</div>` +
     `<div class='big'><b>${topN}</b> <span style='font-size:20px'>篇</span></div><div>占各團篇次 ${pct(topN, total)} <button class='btn ghost sm' id='copy' data-text='${esc(copyText)}'>📋 複製成分文字</button></div>` +
     "<div class='legend' style='margin-top:14px;max-width:520px'>" +
