@@ -43,6 +43,9 @@ ul,ol{padding-left:1.2em}footer{margin-top:64px;text-align:center;color:var(--mu
 /* 關鍵字編輯 */
 details{margin-top:48px}summary{cursor:pointer;font-size:24px;font-weight:900;list-style:none;display:flex;align-items:center;gap:10px}summary::before{content:"";width:6px;height:24px;border-radius:3px;background:var(--grad)}
 textarea{width:100%;min-height:360px;margin:8px 0;padding:12px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:12px;resize:vertical}
+select,input[type=text]{width:100%;font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.field{display:grid;grid-template-columns:4.5em 1fr;gap:8px 12px;align-items:center;margin:8px 0}.field label{font-weight:700;font-size:14px}
+details details{margin-top:12px}details details summary{font-size:14px;font-weight:700;color:var(--muted)}details details summary::before{display:none}
 button.btn{border:0;cursor:pointer;font:inherit;font-weight:900}.btn.ghost{background:var(--line);color:var(--fg)}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 </style></head><body><main id="app">
 <h1>我的 BanG Dream! 成分</h1>
@@ -57,11 +60,15 @@ button.btn{border:0;cursor:pointer;font:inherit;font-weight:900}.btn.ghost{backg
 <li>等 Meta 寄信（幾分鐘到幾天都有），下載 zip 並解壓縮，把裡面的 <b>threads_and_replies.json</b> 丟到上面</li>
 </ol>
 <details id="keys" open><summary>關鍵字</summary>
-<p class="muted">可以依自己習慣的稱呼加同義詞，例如把「阿燈」加到高松燈那一行。</p>
-<p class="muted">一團一段「# ===== 樂團=別名 =====」，底下一行一個角色「正式名=別名=綽號」；「!=詞=詞」是排除詞（整個詞出現時不算裡面的別名）。改好的表只存在這個瀏覽器裡。</p>
-<textarea id="keytxt" spellcheck="false"></textarea>
+<p class="muted">選一個角色或樂團，加上自己習慣的稱呼。排除詞是「整個詞出現時不算」的例外，例如 電燈 不算 燈。改好的表只存在這個瀏覽器裡。</p>
+<div class="field"><label for="who">對象</label><select id="who"></select>
+<label for="syn">同義詞</label><input type="text" id="syn" placeholder="用 、 或 = 分隔">
+<label for="exc">排除詞</label><input type="text" id="exc" placeholder="用 、 或 = 分隔"></div>
+<details><summary>進階：直接編輯整張表（一團一段「# ===== 樂團=別名 =====」，底下一行一個角色「正式名=別名=綽號」，「!=詞=詞」是排除詞）</summary>
+<textarea id="keytxt" spellcheck="false"></textarea></details>
 <div class="row"><button class="btn" id="savekeys">儲存並重算</button><button class="btn ghost" id="resetkeys">還原預設</button><span id="keymsg" class="muted"></span></div>
 </details>
+<footer><a href="https://github.com/RinHizakura/bgpyouso">GitHub</a></footer>
 </main>
 <script src="youso.js"></script>
 <script>
@@ -98,7 +105,51 @@ async function handle(file) {
   try { lastPosts = parseExport(await readExport(file)); await show(); } catch (e) { fail(e); }
 }
 
-const fillKeys = async () => { $("keytxt").value = await bandsTxt(); };
+// ---- 關鍵字編輯：textarea 是唯一的真相，下拉選單只是它的另一個視圖 ----
+const HEAD = /^#\s*={5,}\s*(.+?)\s*=+$/, sep = s => s.split(/[=、,，]/).map(x => x.trim()).filter(Boolean);
+function entries(ls) {
+  // [{i: 行號, key: 正式名, band, aliases}]；團名行 key 是團名、band 也是團名
+  const out = []; let band = null;
+  ls.forEach((line, i) => {
+    const t = line.trim(), m = t.match(HEAD);
+    if (m) { const p = split(m[1]); band = p[0]; out.push({i, key: p[0], band, aliases: p.slice(1)}); return; }
+    if (!t || t.startsWith("#")) return;
+    const p = split(t); if (p[0] !== "!") out.push({i, key: p[0], band, aliases: p.slice(1)});
+  });
+  return out;
+}
+const excLines = ls => ls.map((l, i) => [i, split(l.trim())]).filter(([, p]) => p[0] === "!");
+const related = (words, e) => { const ks = [e.key, ...e.aliases].map(x => x.toLowerCase()); return words.filter(w => { const lw = w.toLowerCase(); return ks.some(k => lw !== k && lw.includes(k)); }); };
+
+function fillWho() {
+  const ls = $("keytxt").value.split("\n"), es = entries(ls), who = $("who"), cur = who.value;
+  who.innerHTML = "";
+  let g = null;
+  for (const e of es) {
+    if (e.key === e.band) { g = document.createElement("optgroup"); g.label = e.band; who.appendChild(g); }
+    const o = document.createElement("option"); o.value = e.i; o.textContent = e.key === e.band ? `${e.key}（團名）` : e.key; (g || who).appendChild(o);
+  }
+  if ([...who.options].some(o => o.value === cur)) who.value = cur;
+  fillFields();
+}
+function fillFields() {
+  const ls = $("keytxt").value.split("\n"), e = entries(ls).find(x => String(x.i) === $("who").value);
+  if (!e) return;
+  $("syn").value = e.aliases.join("、");
+  $("exc").value = related(excLines(ls).flatMap(([, p]) => p.slice(1)), e).join("、");
+}
+function writeBack() {
+  const ls = $("keytxt").value.split("\n"), e = entries(ls).find(x => String(x.i) === $("who").value);
+  if (!e) return;
+  const syn = sep($("syn").value).filter(x => x !== e.key);
+  ls[e.i] = e.key === e.band ? `# ===== ${[e.key, ...syn].join("=")} =====` : [e.key, ...syn].join("=");
+  const all = excLines(ls), old = new Set(related(all.flatMap(([, p]) => p.slice(1)), {key: e.key, aliases: e.aliases})), now = sep($("exc").value);
+  for (const [i, p] of all) ls[i] = ["!", ...p.slice(1).filter(w => !old.has(w))].join("=");
+  const first = all.length ? all[0][0] : ls.findIndex(l => HEAD.test(l.trim()));
+  if (now.length) ls[first] = (all.length ? ls[first] : "!") + "=" + now.join("=") + (all.length ? "" : "\n" + ls[first]);
+  $("keytxt").value = ls.filter((l, i) => !(all.some(([j]) => j === i) && l === "!")).join("\n");
+}
+const fillKeys = async () => { $("keytxt").value = await bandsTxt(); fillWho(); };
 function goHome(openKeys) {
   app.innerHTML = home; fillKeys();
   if (openKeys) { $("keys").open = true; $("keys").scrollIntoView(); }
@@ -109,6 +160,8 @@ app.addEventListener("change", e => { if (e.target.id === "file" && e.target.fil
 app.addEventListener("dragover", e => { const d = e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.add("over"); } });
 app.addEventListener("dragleave", e => e.target.closest("#drop")?.classList.remove("over"));
 app.addEventListener("drop", e => { const d = e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.remove("over"); e.dataTransfer.files[0] && handle(e.dataTransfer.files[0]); } });
+app.addEventListener("change", e => { if (e.target.id === "who") fillFields(); });
+app.addEventListener("input", e => { if (e.target.id === "syn" || e.target.id === "exc") writeBack(); else if (e.target.id === "keytxt") fillWho(); });
 app.addEventListener("click", async e => {
   const id = e.target.id;
   if (id === "editkeys") goHome(true);

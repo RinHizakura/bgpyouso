@@ -249,7 +249,7 @@ function render(posts, b, photos = {}) {
       h.push("</table></div>");
     }
   }
-  h.push(`<footer>產生於 ${new Date().toISOString().slice(0, 10)}</footer>`);
+  h.push(`<footer>產生於 ${new Date().toISOString().slice(0, 10)} · <a href="https://github.com/RinHizakura/bgpyouso">GitHub</a></footer>`);
   return addNav(h.join("\n"));
 }
 
