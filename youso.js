@@ -238,7 +238,6 @@ function render(posts, b, photos = {}) {
   ranking.forEach(([band, n], i) => {
     const top3 = members(band).filter(x => chars[x]).map(x => [chars[x], x]).sort((p, q) => q[0] - p[0]).slice(0, 3);
     h.push(`<div class='rw${n ? "" : " zero"}'><span class='rank r${i + 1}'>#${i + 1}</span><div class='n'>${dot(band)}${esc(band)}</div><div class='v'><b>${pct(n, total, 0)}</b> <span class='muted'>${n} 篇</span></div>` +
-      `<div class='bar'><i style='width:${pct(n, topN, 0)};background:${color[band]}'></i></div>` +
       (top3.length ? "<small>角色：" + top3.map(([k, x]) => `${esc(x)} ${k}`).join("、") + "</small>" : "") + "</div>");
   });
   h.push("</div>");
