@@ -38,13 +38,13 @@ ul,ol{padding-left:1.2em}footer{margin-top:64px;text-align:center;color:var(--mu
 .rw .rank{position:static;font-size:13px}.rw .n{font-weight:900;font-size:17px}.rw .v{text-align:right;font-size:15px}.rw .v b{font-size:18px}
 .rw .bar{grid-column:2/4;margin:4px 0 2px}.rw small{grid-column:2/4;display:block;color:var(--muted);font-size:13px}
 .top3{grid-template-columns:repeat(3,1fr);max-width:720px}.top3 img,.top3 .ph{width:100%;aspect-ratio:3/4;object-fit:contain;display:block;background:var(--line)}
-/* 手機：團卡兩欄、logo 縮小，各團成分一屏截得下 */
+/* 手機只縮尺寸，內容和電腦一樣 */
 @media(max-width:600px){
   .cover{gap:16px;padding:20px}.pie{width:210px}.cover .name{font-size:24px}.cover .big{font-size:48px}
-  .cover .legend{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:12px;max-width:none!important}.cover .legend .cnt{display:none}
-  .rw{padding:7px 12px;gap:0 8px}.rw .n{font-size:14px}.rw .v{font-size:13px}.rw .v b{font-size:15px}.rw .bar{margin:3px 0 1px;height:6px}.rw small{font-size:11px}.rw .kw{display:none}
+  .cover .legend{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:12px;max-width:none!important}
+  .rw{padding:4px 10px;gap:0 6px;line-height:1.35}.rw .rank{font-size:11px;padding:0 7px}.rw .n{font-size:13px}.rw .v{font-size:12px}.rw .v b{font-size:14px}.rw .bar{margin:2px 0 0;height:4px}.rw small{font-size:10px;line-height:1.4;margin-top:1px}
   .tl li{padding-bottom:10px}.tl time{min-width:5.5em}.tl .ex{font-size:12px}.posts li{font-size:13px}
-  #chars th,#chars td{padding:5px 8px;font-size:13px}#chars .first,#chars .bn{display:none}#chars td:nth-child(3){width:1.5em}
+  #chars th,#chars td{padding:5px 8px;font-size:13px}
   .card .rank{top:6px;left:6px;padding:1px 8px;font-size:12px}.card small{font-size:11px;line-height:1.5}.bar{margin:6px 0}
   .top3{gap:8px}.card .body{padding:8px 10px}.card .n{font-size:14px}
   h2{margin:40px 0 6px;font-size:20px}

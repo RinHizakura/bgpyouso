@@ -105,18 +105,6 @@ function analyze(posts, b, c) {
   return {bands, chars, hit, months, by, first, pairs, cross, weak};
 }
 
-function aliasUsage(posts, c) {
-  // {正式名: {別名: 次數}}，同篇多次都算——看的是你習慣怎麼叫
-  const usage = {};
-  for (const p of posts)
-    for (const m of textOf(p).match(c.pat) || []) {
-      const k = m.toLowerCase(), canon = c.lookup[k];
-      if (canon === "!") continue;
-      (usage[canon] = usage[canon] || {})[c.spell[k]] = (usage[canon][c.spell[k]] || 0) + 1;
-    }
-  return usage;
-}
-
 // ---------- 匯出檔 ----------
 function fixMojibake(s) {
   // Meta 匯出檔的老毛病：UTF-8 的每個位元組各寫成一個 \u00XX；整串都在 U+00FF 以下才當亂碼修
@@ -231,7 +219,6 @@ function render(posts, b, photos = {}) {
   const palette = ranking.map(([x, n]) => photos[x] && n / total >= LOGO_MIN ? PIE_COLOR[x] || color[x] : color[x]);  // 沒 logo 的扇形用代表色
   const [topBand, topN] = ranking[0];
   const monthsAll = [...new Set(posts.map(p => (p.timestamp || "").slice(0, 7)).filter(Boolean))].sort();
-  const usage = aliasUsage(posts, c);
   const members = band => Object.keys(b.bandOf).filter(n => b.bandOf[n] === band && n !== band);
   const newest = idx => [...idx].sort((p, q) => day(posts[q]).localeCompare(day(posts[p])));
   const postList = (idx, limit = 10) => { const s = newest(idx); return "<ul class='posts'>" + s.slice(0, limit).map(i => `<li><time>${day(posts[i])}</time><div class='ex'>${excerpt(posts[i], c, Infinity)}</div></li>`).join("") + "</ul>" + (s.length > limit ? `<p class='muted'>…還有 ${s.length - limit} 篇</p>` : ""); };
@@ -244,20 +231,15 @@ function render(posts, b, photos = {}) {
     `<div><div class='muted'>🎸 本命樂團</div><div class='name'>${esc(topBand)}</div>` +
     `<div class='big'><b>${topN}</b> <span style='font-size:20px'>篇</span></div><div>占各團篇次 ${pct(topN, total)}</div>` +
     "<div class='legend' style='margin-top:14px;max-width:520px'>" +
-    ranking.map(([x, n], i) => `<span><i data-band='${esc(x)}' style='background:${palette[i]}'></i>${esc(x)} <span class='muted'><span class='cnt'>${n} 篇 · </span>${pct(n, total, 0)}</span></span>`).join("") +
+    ranking.map(([x, n], i) => `<span><i data-band='${esc(x)}' style='background:${palette[i]}'></i>${esc(x)} <span class='muted'>${pct(n, total, 0)}</span></span>`).join("") +
     "</div></div></section>"];
 
   h.push("<h2>🎤 各團成分</h2><div class='rows'>");
   ranking.forEach(([band, n], i) => {
     const top3 = members(band).filter(x => chars[x]).map(x => [chars[x], x]).sort((p, q) => q[0] - p[0]).slice(0, 3);
-    const u = {};
-    for (const x of [band, ...members(band)]) for (const [a, k] of Object.entries(usage[x] || {})) u[a] = (u[a] || 0) + k;
-    const ul = Object.entries(u).sort((p, q) => q[1] - p[1]), utot = ul.reduce((s, [, k]) => s + k, 0) || 1;
     h.push(`<div class='rw${n ? "" : " zero"}'><span class='rank r${i + 1}'>#${i + 1}</span><div class='n'>${dot(band)}${esc(band)}</div><div class='v'><b>${pct(n, total, 0)}</b> <span class='muted'>${n} 篇</span></div>` +
       `<div class='bar'><i style='width:${pct(n, topN, 0)};background:${color[band]}'></i></div>` +
-      (top3.length ? "<small>角色：" + top3.map(([k, x]) => `${esc(x)} ${k}`).join("、") + "</small>" : "") +
-      (ul.length ? "<small class='kw'>關鍵字：" + ul.slice(0, 5).map(([a, k]) => `${esc(a)} <span class='muted'>${pct(k, utot, 0)}</span>`).join("、") + "</small>" : "") +
-      "</div>");
+      (top3.length ? "<small>角色：" + top3.map(([k, x]) => `${esc(x)} ${k}`).join("、") + "</small>" : "") + "</div>");
   });
   h.push("</div>");
 
@@ -276,8 +258,8 @@ function render(posts, b, photos = {}) {
     h.push("</div>");
     const all = Object.entries(chars).sort((p, q) => q[1] - p[1]);
     if (all.length > 3) {
-      h.push(`<div class='tbl-wrap collapsed' id='chars' style='margin-top:16px'><table><tr><th>#</th><th>角色</th><th>樂團</th><th class='first'>首次提到</th><th class='r'>篇數</th></tr>`);
-      all.slice(3).forEach(([x, n], i) => h.push(`<tr${i + 3 >= 10 ? " class='more'" : ""}><td>${i + 4}</td><td><b>${esc(x)}</b></td><td class='muted'>${dot(b.bandOf[x])}<span class='bn'>${esc(b.bandOf[x])}</span></td><td class='muted first'>${(first[x] || "").slice(0, 10)}</td><td class='r'>${n}</td></tr>`));
+      h.push(`<div class='tbl-wrap collapsed' id='chars' style='margin-top:16px'><table><tr><th>#</th><th>角色</th><th>團</th><th class='r'>篇數</th></tr>`);
+      all.slice(3).forEach(([x, n], i) => h.push(`<tr${i + 3 >= 10 ? " class='more'" : ""}><td>${i + 4}</td><td><b>${esc(x)}</b></td><td title='${esc(b.bandOf[x])}'>${dot(b.bandOf[x])}</td><td class='r'>${n}</td></tr>`));
       h.push("</table>" + (all.length > 10 ? `<p style='text-align:center;margin:12px 0 0'><button class='btn ghost sm' id='showall' data-n='${all.length}'>顯示全部 ${all.length} 位</button></p>` : "") + "</div>");
     }
   }
@@ -341,11 +323,10 @@ function demo(bandsTxt) {
   const out = render(posts, b);
   assert(out.includes("<div class='name'>Poppin&#x27;Party</div>"), "五團平手，照 bands.txt 順序 Poppin'Party 先");
   assert(out.includes("👯 同框") && out.includes("🗓️ 首篇貼文") && out.includes("📚 命中貼文") && out.includes("🔍 待確認") && out.includes("data-who='宇田川巴'"), "新區塊都在");
-  assert(out.includes("<mark>香澄</mark>") && (out.match(/<section class='sec'>/g) || []).length === 8 && out.includes("class='rw zero'") && out.includes("<th class='first'>首次提到</th>"), "摘錄標記、section、0 篇卡片變淡、首次提到欄");
+  assert(out.includes("<mark>香澄</mark>") && (out.match(/<section class='sec'>/g) || []).length === 8 && out.includes("class='rw zero'") && out.includes("<th>團</th>"), "摘錄標記、section、0 篇列變淡、角色表");
   assert((out.match(/class='rw( zero)?'/g) || []).length === 9 && (out.match(/class='card'/g) || []).length === 3 && out.includes("<path d=") && out.includes("<polyline"), "9 行團 + 前 3 名角色卡、圓餅、折線");
-  assert(out.includes("關鍵字：彩彩 <span class='muted'>67%</span>"), "稱呼習慣：彩彩 2 次 / 丸山彩 1 次");
   assert(out.includes("<nav>") && out.includes("id='s0'") && out.includes("角色總排行"), "導覽與排行");
-  assert(out.includes("<i data-band='ハロー、ハッピーワールド！' style='background:#ffcc00'></i>ハロー、ハッピーワールド！ <span class='muted'><span class='cnt'>0 篇 · </span>0%"), "封面圖例列全部 9 團含 0 篇");
+  assert(out.includes("<i data-band='ハロー、ハッピーワールド！' style='background:#ffcc00'></i>ハロー、ハッピーワールド！ <span class='muted'>0%"), "封面圖例列全部 9 團含 0 篇");
   assert(out.includes('fill="#ff9ecb"') && out.includes('stroke="#ff9ecb"') && !out.includes('fill="#ffd6e6"'), "沒 logo：圓餅、折線都用代表色");
   assert(out.includes("<div class='ph'></div>") && !out.includes("<img"), "沒給 photos：角色卡空框、圓餅沒 logo");
   const photos = loadPhotos("# 註解\n戸山香澄=https://p/kasumi.png\nPoppin'Party=https://p/popipa.svg\n");
@@ -355,7 +336,7 @@ function demo(bandsTxt) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = {loadBands, loadPhotos, compile, analyze, aliasUsage, parseExport, fixMojibake, render, demo, pieChart, PIE_COLOR};
+  module.exports = {loadBands, loadPhotos, compile, analyze, parseExport, fixMojibake, render, demo, pieChart, PIE_COLOR};
   if (require.main === module && process.argv.includes("--demo"))
     console.log(demo(require("fs").readFileSync(require("path").join(__dirname, "bands.txt"), "utf8")));
 }
