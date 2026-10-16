@@ -55,6 +55,9 @@ textarea{width:100%;min-height:360px;margin:8px 0;padding:12px;font:13px/1.5 ui-
 select,input[type=text]{width:100%;font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .field{display:grid;grid-template-columns:4.5em 1fr;gap:8px 12px;align-items:center;margin:8px 0}.field label{font-weight:700;font-size:14px}
 #editor details{margin-top:12px}#editor details summary{font-size:14px;font-weight:700;color:var(--muted)}
+/* 報告：每區一個 section，右下角帶網址，截圖就有出處 */
+.sec{padding-bottom:8px}.sec::after{content:"rinhizakura.github.io/bgpyouso";display:block;text-align:right;color:var(--muted);font-size:11px;margin-top:14px;opacity:.7}
+.sec h2{margin-top:36px}
 /* 報告新區塊 */
 .btn.sm{padding:6px 12px;font-size:13px;border-radius:9px;vertical-align:middle}mark{background:#e0507a55;color:inherit;border-radius:3px;padding:0 2px}
 .chips i,.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}.collapsed .more{display:none}.card.zero{opacity:.45}
@@ -192,7 +195,6 @@ document.addEventListener("click", async e => {
   if (id === "closedrawer") drawer.classList.remove("open");
   if (id === "rehome") goHome();
   if (who) { const o = [...$("who").options].find(o => o.textContent.replace("（團名）", "") === who); if (o) { $("who").value = o.value; fillFields(); } drawer.classList.add("open"); }
-  if (id === "copy") navigator.clipboard.writeText(e.target.dataset.text).then(() => { e.target.textContent = "已複製 ✓"; }, () => { e.target.textContent = "複製失敗"; });
   if (id === "showall") { const w = $("chars"); w.classList.toggle("collapsed"); e.target.textContent = w.classList.contains("collapsed") ? `顯示全部 ${e.target.dataset.n} 位` : "收合"; }
   if (id === "resetkeys") { store.set(null); await fillKeys(); $("keymsg").textContent = "已還原預設"; }
   if (id === "savekeys") {

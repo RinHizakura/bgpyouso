@@ -10,7 +10,7 @@
 const BAND_COLOR = {"Poppin'Party": "#ff5522", "Afterglow": "#e53c4a", "Pastel*Palettes": "#ff9ecb", "Roselia": "#3b5dc9",
   "ハロー、ハッピーワールド！": "#ffcc00", "Morfonica": "#4ea6e1", "RAISE A SUILEN": "#b40080", "MyGO!!!!!": "#3f92e0", "Ave Mujica": "#5e3aa3"};
 const COLORS = ["#e0507a", "#4c8fdc", "#f0a43a", "#3fb28f", "#9a6ee0", "#e8733a", "#38b6c9", "#c9a23a", "#7a7a7a", "#d05fbf"];
-const TITLE = "我的 BanG Dream! 成分", SITE = "https://rinhizakura.github.io/bgpyouso/";
+const TITLE = "我的 BanG Dream! 成分";
 // GitHub 經典貓標（octicon mark-github），首頁和報告頁尾共用
 const GITHUB = `<a class="gh" href="https://github.com/RinHizakura/bgpyouso"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>RinHizakura/bgpyouso</a>`;
 
@@ -189,11 +189,13 @@ function lineChart(series, months, colors) {
 }
 
 function addNav(out) {
-  // 每個 <h2> 加 id，chips 前面插一條置頂導覽
+  // 每個 <h2> 加 id、h1 下面插一條置頂導覽；封面和每個 h2 區塊各包成 <section class='sec'>，手機一區一截圖
   const ids = [];
   out = out.replace(/<h2>(.*?)<\/h2>/g, (_, t) => { ids.push([`s${ids.length}`, t]); return `<h2 id='${ids[ids.length - 1][0]}'>${t}</h2>`; });
   const nav = "<nav>" + ids.map(([i, t]) => `<a href='#${i}'>${t}</a>`).join("") + "</nav>";
-  return out.replace("<div class='chips'>", nav + "<div class='chips'>");
+  const fi = out.indexOf("<footer>"), parts = out.slice(0, fi).split(/(?=<h2 )/), cut = parts[0].indexOf("</h1>") + 5;
+  const sec = p => `<section class='sec'>${p}</section>`;
+  return parts[0].slice(0, cut) + nav + sec(parts[0].slice(cut)) + parts.slice(1).map(sec).join("") + out.slice(fi);
 }
 
 // ---------- 報告 ----------
@@ -219,14 +221,13 @@ function render(posts, b, photos = {}) {
   const newest = idx => [...idx].sort((p, q) => day(posts[q]).localeCompare(day(posts[p])));
   const postList = (idx, limit = 10) => { const s = newest(idx); return "<ul class='posts'>" + s.slice(0, limit).map(i => `<li><time>${day(posts[i])}</time>${excerpt(posts[i], c)}</li>`).join("") + "</ul>" + (s.length > limit ? `<p class='muted'>…還有 ${s.length - limit} 篇</p>` : ""); };
   const dot = x => `<i class='dot' style='background:${color[x]}'></i>`;
-  const copyText = `${TITLE}\n🎸 本命 ${topBand} ${pct(topN, total, 0)}\n` + ranking.filter(([, n]) => n).slice(0, 5).map(([x, n]) => `${x} ${pct(n, total, 0)}`).join("｜") + `\n共 ${posts.length} 篇，${pct(hit, posts.length, 0)} 提到 BanG Dream!\n${SITE}`;
 
   const h = [`<h1>${esc(TITLE)}</h1>`,
     `<div class='chips'><span>📝 ${posts.length} 篇</span><span>📅 ${monthsAll[0] || "?"} ～ ${monthsAll[monthsAll.length - 1] || "?"}</span>` +
     `<span>🎯 ${pct(hit, posts.length)} 提到 BanG Dream!</span><span>💬 合計 ${total} 篇次</span></div>`,
     "<section class='cover'>" + pieChart(ranking, palette).replace("<svg", "<svg class='pie'") +
     `<div><div class='muted'>🎸 本命樂團</div><div class='name'>${esc(topBand)}</div>` +
-    `<div class='big'><b>${topN}</b> <span style='font-size:20px'>篇</span></div><div>占各團篇次 ${pct(topN, total)} <button class='btn ghost sm' id='copy' data-text='${esc(copyText)}'>📋 複製成分文字</button></div>` +
+    `<div class='big'><b>${topN}</b> <span style='font-size:20px'>篇</span></div><div>占各團篇次 ${pct(topN, total)}</div>` +
     "<div class='legend' style='margin-top:14px;max-width:520px'>" +
     ranking.map(([x, n]) => `<span><i style='background:${color[x]}'></i>${esc(x)} <span class='muted'>${n} 篇 · ${pct(n, total, 0)}</span></span>`).join("") +
     "</div></div></section>"];
@@ -325,7 +326,7 @@ function demo(bandsTxt) {
   const out = render(posts, b);
   assert(out.includes("<div class='name'>Poppin&#x27;Party</div>"), "五團平手，照 bands.txt 順序 Poppin'Party 先");
   assert(out.includes("👯 同框") && out.includes("🗓️ 入坑時間線") && out.includes("📚 命中貼文") && out.includes("🔍 待確認") && out.includes("data-who='宇田川巴'"), "新區塊都在");
-  assert(out.includes("<mark>香澄</mark>") && out.includes("id='copy'") && out.includes("class='card zero'") && out.includes("<th>首次提到</th>"), "摘錄標記、複製、0 篇卡片變淡、首次提到欄");
+  assert(out.includes("<mark>香澄</mark>") && (out.match(/<section class='sec'>/g) || []).length === 8 && out.includes("class='card zero'") && out.includes("<th>首次提到</th>"), "摘錄標記、複製、0 篇卡片變淡、首次提到欄");
   assert((out.match(/class='card( zero)?'/g) || []).length === 12 && out.includes("<path d=") && out.includes("<polyline"), "9 張團卡 + 前 3 名角色卡、圓餅、折線");
   assert(out.includes("關鍵字：彩彩 <span class='muted'>67%</span>"), "稱呼習慣：彩彩 2 次 / 丸山彩 1 次");
   assert(out.includes("<nav>") && out.includes("id='s0'") && out.includes("角色總排行"), "導覽與排行");
