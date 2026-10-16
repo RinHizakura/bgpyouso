@@ -9,6 +9,9 @@
 
 const BAND_COLOR = {"Poppin'Party": "#ff5522", "Afterglow": "#e53c4a", "Pastel*Palettes": "#ff9ecb", "Roselia": "#3b5dc9",
   "ハロー、ハッピーワールド！": "#ffcc00", "Morfonica": "#4ea6e1", "RAISE A SUILEN": "#b40080", "MyGO!!!!!": "#3f92e0", "Ave Mujica": "#5e3aa3"};
+// 圓餅扇形專用底色：粉彩淺底襯飽和的 logo（ハロハピ logo 是黃的，只有它用深底），折線、色點仍用 BAND_COLOR
+const PIE_COLOR = {"Poppin'Party": "#ffd0c2", "Afterglow": "#f5b8b8", "Pastel*Palettes": "#ffd6e6", "Roselia": "#d9ddf7",
+  "ハロー、ハッピーワールド！": "#4a2d05", "Morfonica": "#cfe8f7", "RAISE A SUILEN": "#e9e0f7", "MyGO!!!!!": "#d8e6f5", "Ave Mujica": "#c9b8e8"};
 const COLORS = ["#e0507a", "#4c8fdc", "#f0a43a", "#3fb28f", "#9a6ee0", "#e8733a", "#38b6c9", "#c9a23a", "#7a7a7a", "#d05fbf"];
 const TITLE = "我的 BanG Dream! 成分";
 // GitHub 經典貓標（octicon mark-github），首頁和報告頁尾共用
@@ -148,22 +151,34 @@ function parseExport(obj) {
 }
 
 // ---------- 圖 ----------
-function pieChart(items, colors) {
+const LOGO_MIN = .08;  // 扇形占比低於這個放不下 logo，就用團代表色
+const light = hex => { const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)); return (r * 299 + g * 587 + b * 114) / 255000 > .6; };
+
+function pieChart(items, colors, photos = {}) {
+  // 扇形裡直接放團 logo（≥8% 才放得下）；百分比字放 logo 下面，太小的扇形只留圖例
   const tot = items.reduce((s, [, n]) => s + n, 0) || 1, C = 100, R = 90;
-  if (items.length === 1) return `<svg viewBox="0 0 200 200" role="img"><circle cx="${C}" cy="${C}" r="${R}" fill="${colors[0]}"><title>${esc(items[0][0])} 100%</title></circle></svg>`;
-  const out = ['<svg viewBox="0 0 200 200" role="img" aria-label="樂團分布">'];
+  const label = (name, s, m, fg) => {
+    const r = s >= 1 ? 0 : R * .6, cx = C + r * Math.cos(m), cy = C + r * Math.sin(m), o = [];
+    const logo = photos[name] && s >= LOGO_MIN;
+    let h = 0;
+    if (logo) {
+      const w = s >= 1 ? 90 : Math.min(60, Math.max(28, 2 * r * Math.sin(Math.PI * s) * .9)); h = w * .42;
+      o.push(`<image data-band="${esc(name)}" href="${esc(photos[name])}" x="${(cx - w / 2).toFixed(1)}" y="${(cy - h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"/>`);
+    }
+    if (s >= .06 && (!logo || s >= .14)) o.push(`<text data-band="${esc(name)}" x="${cx.toFixed(1)}" y="${(logo ? cy + h / 2 + 11 : cy + 4).toFixed(1)}" font-size="${logo ? 10 : 11}" font-weight="700" fill="${fg}" text-anchor="middle">${pct(s, 1, 0)}</text>`);
+    return o.join("");
+  };
+  if (items.length === 1) return `<svg viewBox="0 0 200 200" role="img"><circle cx="${C}" cy="${C}" r="${R}" fill="${colors[0]}"><title>${esc(items[0][0])} 100%</title></circle>${label(items[0][0], 1, 0, light(colors[0]) ? "#241f26" : "#fff")}</svg>`;
+  const out = ['<svg viewBox="0 0 200 200" role="img" aria-label="樂團分布">'], labels = [];
   let a = -Math.PI / 2;
   items.forEach(([name, n], i) => {
     const b = a + 2 * Math.PI * n / tot;
     const [x0, y0, x1, y1] = [C + R * Math.cos(a), C + R * Math.sin(a), C + R * Math.cos(b), C + R * Math.sin(b)].map(v => v.toFixed(1));
-    out.push(`<path d="M${C},${C} L${x0},${y0} A${R},${R} 0 ${b - a > Math.PI ? 1 : 0},1 ${x1},${y1} Z" fill="${colors[i]}" stroke="var(--card)" stroke-width="1.5"><title>${esc(name)}：${n} 篇（${pct(n, tot, 0)}）</title></path>`);
-    if (n / tot >= 0.06) {
-      const m = (a + b) / 2;
-      out.push(`<text x="${(C + R * .62 * Math.cos(m)).toFixed(1)}" y="${(C + R * .62 * Math.sin(m) + 4).toFixed(1)}" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">${pct(n, tot, 0)}</text>`);
-    }
+    out.push(`<path d="M${C},${C} L${x0},${y0} A${R},${R} 0 ${b - a > Math.PI ? 1 : 0},1 ${x1},${y1} Z" fill="${colors[i]}" data-band="${esc(name)}" stroke="var(--card)" stroke-width="1.5"><title>${esc(name)}：${n} 篇（${pct(n, tot, 0)}）</title></path>`);
+    labels.push(label(name, n / tot, (a + b) / 2, light(colors[i]) ? "#241f26" : "#fff"));
     a = b;
   });
-  return out.join("\n") + "</svg>";
+  return out.join("\n") + labels.join("") + "</svg>";  // logo 畫在所有扇形之後，才不會被鄰邊蓋到
 }
 
 function lineChart(series, months, colors) {
@@ -200,7 +215,7 @@ function addNav(out) {
 
 // ---------- 報告 ----------
 function excerpt(p, c, n = 100) {
-  // 貼文摘錄，對到的關鍵字包 <mark>（排除詞不標）
+  // 貼文摘錄（n=Infinity 給全文，交給 CSS 截行、點了展開），對到的關鍵字包 <mark>（排除詞不標）
   const t = (p.text || "").replace(/\s+/g, " ").trim(), cut = t.length > n ? t.slice(0, n) + "…" : t;
   return esc(cut.replace(c.pat, m => c.lookup[m.toLowerCase()] === "!" ? m : `\u0001${m}\u0002`)).replace(/\u0001/g, "<mark>").replace(/\u0002/g, "</mark>");
 }
@@ -213,43 +228,43 @@ function render(posts, b, photos = {}) {
   const total = Object.values(bands).reduce((s, n) => s + n, 0);
   const ranking = b.order.map(x => [x, bands[x] || 0]).sort((p, q) => q[1] - p[1]);  // 9 團都列，0 篇也算成分；平手照 bands.txt 順序
   const color = Object.fromEntries(ranking.map(([x], i) => [x, BAND_COLOR[x] || COLORS[i % COLORS.length]]));
-  const palette = ranking.map(([x]) => color[x]);
+  const palette = ranking.map(([x, n]) => photos[x] && n / total >= LOGO_MIN ? PIE_COLOR[x] || color[x] : color[x]);  // 沒 logo 的扇形用代表色
   const [topBand, topN] = ranking[0];
   const monthsAll = [...new Set(posts.map(p => (p.timestamp || "").slice(0, 7)).filter(Boolean))].sort();
   const usage = aliasUsage(posts, c);
   const members = band => Object.keys(b.bandOf).filter(n => b.bandOf[n] === band && n !== band);
   const newest = idx => [...idx].sort((p, q) => day(posts[q]).localeCompare(day(posts[p])));
-  const postList = (idx, limit = 10) => { const s = newest(idx); return "<ul class='posts'>" + s.slice(0, limit).map(i => `<li><time>${day(posts[i])}</time>${excerpt(posts[i], c)}</li>`).join("") + "</ul>" + (s.length > limit ? `<p class='muted'>…還有 ${s.length - limit} 篇</p>` : ""); };
+  const postList = (idx, limit = 10) => { const s = newest(idx); return "<ul class='posts'>" + s.slice(0, limit).map(i => `<li><time>${day(posts[i])}</time><div class='ex'>${excerpt(posts[i], c, Infinity)}</div></li>`).join("") + "</ul>" + (s.length > limit ? `<p class='muted'>…還有 ${s.length - limit} 篇</p>` : ""); };
   const dot = x => `<i class='dot' style='background:${color[x]}'></i>`;
 
   const h = [`<h1>${esc(TITLE)}</h1>`,
     `<div class='chips'><span>📝 ${posts.length} 篇</span><span>📅 ${monthsAll[0] || "?"} ～ ${monthsAll[monthsAll.length - 1] || "?"}</span>` +
     `<span>🎯 ${pct(hit, posts.length)} 提到 BanG Dream!</span><span>💬 合計 ${total} 篇次</span></div>`,
-    "<section class='cover'>" + pieChart(ranking, palette).replace("<svg", "<svg class='pie'") +
+    "<section class='cover'>" + pieChart(ranking, palette, photos).replace("<svg", "<svg class='pie'") +
     `<div><div class='muted'>🎸 本命樂團</div><div class='name'>${esc(topBand)}</div>` +
     `<div class='big'><b>${topN}</b> <span style='font-size:20px'>篇</span></div><div>占各團篇次 ${pct(topN, total)}</div>` +
     "<div class='legend' style='margin-top:14px;max-width:520px'>" +
-    ranking.map(([x, n]) => `<span><i style='background:${color[x]}'></i>${esc(x)} <span class='muted'><span class='cnt'>${n} 篇 · </span>${pct(n, total, 0)}</span></span>`).join("") +
+    ranking.map(([x, n], i) => `<span><i data-band='${esc(x)}' style='background:${palette[i]}'></i>${esc(x)} <span class='muted'><span class='cnt'>${n} 篇 · </span>${pct(n, total, 0)}</span></span>`).join("") +
     "</div></div></section>"];
 
-  h.push("<h2>🎤 各團成分</h2><div class='grid bands'>");
+  h.push("<h2>🎤 各團成分</h2><div class='rows'>");
   ranking.forEach(([band, n], i) => {
     const top3 = members(band).filter(x => chars[x]).map(x => [chars[x], x]).sort((p, q) => q[0] - p[0]).slice(0, 3);
     const u = {};
     for (const x of [band, ...members(band)]) for (const [a, k] of Object.entries(usage[x] || {})) u[a] = (u[a] || 0) + k;
     const ul = Object.entries(u).sort((p, q) => q[1] - p[1]), utot = ul.reduce((s, [, k]) => s + k, 0) || 1;
-    h.push(`<div class='card${n ? "" : " zero"}' style='border-top:6px solid ${color[band]}'><span class='rank r${i + 1}'>#${i + 1}</span><div class='logo'>${img(photos, band)}</div><div class='body'><div class='n'>${esc(band)}</div>` +
-      `<div class='bar'><i style='width:${pct(n, topN, 0)}'></i></div><div>${n} 篇 <span class='muted'>${pct(n, total)}</span></div>` +
+    h.push(`<div class='rw${n ? "" : " zero"}'><span class='rank r${i + 1}'>#${i + 1}</span><div class='n'>${dot(band)}${esc(band)}</div><div class='v'><b>${pct(n, total, 0)}</b> <span class='muted'>${n} 篇</span></div>` +
+      `<div class='bar'><i style='width:${pct(n, topN, 0)};background:${color[band]}'></i></div>` +
       (top3.length ? "<small>角色：" + top3.map(([k, x]) => `${esc(x)} ${k}`).join("、") + "</small>" : "") +
-      (ul.length ? "<small>關鍵字：" + ul.slice(0, 5).map(([a, k]) => `${esc(a)} <span class='muted'>${pct(k, utot, 0)}</span>`).join("、") + "</small>" : "") +
-      "</div></div>");
+      (ul.length ? "<small class='kw'>關鍵字：" + ul.slice(0, 5).map(([a, k]) => `${esc(a)} <span class='muted'>${pct(k, utot, 0)}</span>`).join("、") + "</small>" : "") +
+      "</div>");
   });
   h.push("</div>");
 
   if (monthsAll.length) {
     const series = ranking.map(([x]) => [x, months[x] || {}]);
     h.push("<h2>📈 變心曲線</h2><p class='muted'>每月各團篇數。</p><div class='chart'><div class='legend'>" +
-      series.map(([x]) => `<span><i style='background:${color[x]}'></i>${esc(x)}</span>`).join("") + "</div>" + lineChart(series, monthsAll, palette) + "</div>");
+      series.map(([x]) => `<span><i style='background:${color[x]}'></i>${esc(x)}</span>`).join("") + "</div>" + lineChart(series, monthsAll, ranking.map(([x]) => color[x])) + "</div>");
   }
 
   const top10 = Object.entries(chars).sort((p, q) => q[1] - p[1]).slice(0, 10);
@@ -261,8 +276,8 @@ function render(posts, b, photos = {}) {
     h.push("</div>");
     const all = Object.entries(chars).sort((p, q) => q[1] - p[1]);
     if (all.length > 3) {
-      h.push(`<div class='tbl-wrap collapsed' id='chars' style='margin-top:16px'><table><tr><th>#</th><th>角色</th><th>樂團</th><th>首次提到</th><th class='r'>篇數</th></tr>`);
-      all.slice(3).forEach(([x, n], i) => h.push(`<tr${i + 3 >= 10 ? " class='more'" : ""}><td>${i + 4}</td><td><b>${esc(x)}</b></td><td class='muted'>${dot(b.bandOf[x])}${esc(b.bandOf[x])}</td><td class='muted'>${(first[x] || "").slice(0, 10)}</td><td class='r'>${n}</td></tr>`));
+      h.push(`<div class='tbl-wrap collapsed' id='chars' style='margin-top:16px'><table><tr><th>#</th><th>角色</th><th>樂團</th><th class='first'>首次提到</th><th class='r'>篇數</th></tr>`);
+      all.slice(3).forEach(([x, n], i) => h.push(`<tr${i + 3 >= 10 ? " class='more'" : ""}><td>${i + 4}</td><td><b>${esc(x)}</b></td><td class='muted'>${dot(b.bandOf[x])}<span class='bn'>${esc(b.bandOf[x])}</span></td><td class='muted first'>${(first[x] || "").slice(0, 10)}</td><td class='r'>${n}</td></tr>`));
       h.push("</table>" + (all.length > 10 ? `<p style='text-align:center;margin:12px 0 0'><button class='btn ghost sm' id='showall' data-n='${all.length}'>顯示全部 ${all.length} 位</button></p>` : "") + "</div>");
     }
   }
@@ -274,8 +289,8 @@ function render(posts, b, photos = {}) {
 
   const tl = ranking.filter(([x, n]) => n && first[x]).sort((p, q) => first[p[0]].localeCompare(first[q[0]]));
   if (tl.length) {
-    h.push("<h2>🗓️ 入坑時間線</h2><ol class='tl'>" +
-      tl.map(([x]) => { const i = by[x].reduce((a, j) => (posts[j].timestamp < posts[a].timestamp ? j : a)); return `<li><time>${first[x].slice(0, 10)}</time><div><b style='color:${color[x]}'>${esc(x)}</b><div class='muted'>${excerpt(posts[i], c, 80)}</div></div></li>`; }).join("") + "</ol>");
+    h.push("<h2>🗓️ 首篇貼文</h2><ol class='tl'>" +
+      tl.map(([x]) => { const i = by[x].reduce((a, j) => (posts[j].timestamp < posts[a].timestamp ? j : a)); return `<li><time>${first[x].slice(0, 10)}</time><div><b style='color:${color[x]}'>${esc(x)}</b><div class='ex muted'>${excerpt(posts[i], c, Infinity)}</div></div></li>`; }).join("") + "</ol>");
   }
 
   h.push("<h2>📚 命中貼文</h2><p class='muted'>每團、每位角色最近 10 篇，<mark>標記</mark>是對到的關鍵字。數字不對勁就從這裡找原因。</p>");
@@ -284,7 +299,7 @@ function render(posts, b, photos = {}) {
 
   if (weak.length) {
     h.push(`<h2>🔍 待確認</h2><p class='muted'>這 ${weak.length} 篇只靠單字或短假名對到（巴、彩、蘭、燈、ひな…），最容易誤判。不是在講邦邦的話，把那個詞加進該角色的排除詞。</p><ul class='posts weak'>` +
-      newest(weak.map(w => w.i)).slice(0, 50).map(i => { const w = weak.find(w => w.i === i); return `<li><time>${day(posts[i])}</time>${excerpt(posts[i], c)}<div class='row' style='margin-top:6px'>${w.names.map(n => `<button class='btn ghost sm' data-who='${esc(n)}'>改「${esc(n)}」的關鍵字</button>`).join("")}</div></li>`; }).join("") +
+      newest(weak.map(w => w.i)).slice(0, 50).map(i => { const w = weak.find(w => w.i === i); return `<li><time>${day(posts[i])}</time><div class='ex'>${excerpt(posts[i], c, Infinity)}</div><div class='row' style='margin-top:6px'>${w.names.map(n => `<button class='btn ghost sm' data-who='${esc(n)}'>改「${esc(n)}」的關鍵字</button>`).join("")}</div></li>`; }).join("") +
       "</ul>" + (weak.length > 50 ? `<p class='muted'>…還有 ${weak.length - 50} 篇</p>` : ""));
   }
 
@@ -325,22 +340,22 @@ function demo(bandsTxt) {
 
   const out = render(posts, b);
   assert(out.includes("<div class='name'>Poppin&#x27;Party</div>"), "五團平手，照 bands.txt 順序 Poppin'Party 先");
-  assert(out.includes("👯 同框") && out.includes("🗓️ 入坑時間線") && out.includes("📚 命中貼文") && out.includes("🔍 待確認") && out.includes("data-who='宇田川巴'"), "新區塊都在");
-  assert(out.includes("<mark>香澄</mark>") && (out.match(/<section class='sec'>/g) || []).length === 8 && out.includes("class='card zero'") && out.includes("<th>首次提到</th>"), "摘錄標記、複製、0 篇卡片變淡、首次提到欄");
-  assert((out.match(/class='card( zero)?'/g) || []).length === 12 && out.includes("<path d=") && out.includes("<polyline"), "9 張團卡 + 前 3 名角色卡、圓餅、折線");
+  assert(out.includes("👯 同框") && out.includes("🗓️ 首篇貼文") && out.includes("📚 命中貼文") && out.includes("🔍 待確認") && out.includes("data-who='宇田川巴'"), "新區塊都在");
+  assert(out.includes("<mark>香澄</mark>") && (out.match(/<section class='sec'>/g) || []).length === 8 && out.includes("class='rw zero'") && out.includes("<th class='first'>首次提到</th>"), "摘錄標記、section、0 篇卡片變淡、首次提到欄");
+  assert((out.match(/class='rw( zero)?'/g) || []).length === 9 && (out.match(/class='card'/g) || []).length === 3 && out.includes("<path d=") && out.includes("<polyline"), "9 行團 + 前 3 名角色卡、圓餅、折線");
   assert(out.includes("關鍵字：彩彩 <span class='muted'>67%</span>"), "稱呼習慣：彩彩 2 次 / 丸山彩 1 次");
   assert(out.includes("<nav>") && out.includes("id='s0'") && out.includes("角色總排行"), "導覽與排行");
-  assert(out.includes("<i style='background:#ffcc00'></i>ハロー、ハッピーワールド！ <span class='muted'><span class='cnt'>0 篇 · </span>0%"), "封面圖例列全部 9 團含 0 篇");
-  assert(out.includes('fill="#ff9ecb"') && out.includes('stroke="#ff9ecb"'), "Pastel*Palettes 的圓餅扇形和折線用代表色");
-  assert(out.includes("<div class='ph'></div>") && !out.includes("<img"), "沒給 photos：角色卡空框、團卡沒 logo");
+  assert(out.includes("<i data-band='ハロー、ハッピーワールド！' style='background:#ffcc00'></i>ハロー、ハッピーワールド！ <span class='muted'><span class='cnt'>0 篇 · </span>0%"), "封面圖例列全部 9 團含 0 篇");
+  assert(out.includes('fill="#ff9ecb"') && out.includes('stroke="#ff9ecb"') && !out.includes('fill="#ffd6e6"'), "沒 logo：圓餅、折線都用代表色");
+  assert(out.includes("<div class='ph'></div>") && !out.includes("<img"), "沒給 photos：角色卡空框、圓餅沒 logo");
   const photos = loadPhotos("# 註解\n戸山香澄=https://p/kasumi.png\nPoppin'Party=https://p/popipa.svg\n");
   const out2 = render(posts, b, photos);
-  assert(out2.includes('src="https://p/kasumi.png"') && out2.includes('src="https://p/popipa.svg"') && (out2.match(/<img/g) || []).length === 2, "有網址的才放圖");
+  assert(out2.includes('src="https://p/kasumi.png"') && (out2.match(/<img/g) || []).length === 1 && out2.includes('href="https://p/popipa.svg"') && out2.includes('fill="#ffd0c2" data-band="Poppin&#x27;Party"') && out2.includes('fill="#241f26"'), "有 logo 的扇形才用粉彩底、字變深色");
   return "demo OK";
 }
 
 if (typeof module !== "undefined") {
-  module.exports = {loadBands, loadPhotos, compile, analyze, aliasUsage, parseExport, fixMojibake, render, demo};
+  module.exports = {loadBands, loadPhotos, compile, analyze, aliasUsage, parseExport, fixMojibake, render, demo, pieChart, PIE_COLOR};
   if (require.main === module && process.argv.includes("--demo"))
     console.log(demo(require("fs").readFileSync(require("path").join(__dirname, "bands.txt"), "utf8")));
 }
